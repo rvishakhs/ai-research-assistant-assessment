@@ -7,7 +7,8 @@ from app.agent.agentrunner import AgentRunner
 from app.api.routes import router
 
 logging.basicConfig(
-    level=logging.INFO
+    level=logging.INFO,
+    format = "%(asctime)s %(levelname)s %(name)s — %(message)s",
 )
 
 @asynccontextmanager

@@ -12,7 +12,7 @@ class Dataset(BaseModel):
 
 class Project(BaseModel):
     id : str
-    tittle : str
+    title : str
     status : str
     principal_investigator : str
     organisation : str
@@ -25,28 +25,33 @@ class Researcher(BaseModel):
     projects: list[str]
 
 
-MOCK_DATA_DIR = Path(__file__).parent.parent.parent / "mock_data"
+MOCK_DATA_DIR = Path(__file__).parent.parent.parent / "mock-data"
 
 class DataStore:
-    def __init__(self):
-        self.datasets = self._load_json("datasets.json", Dataset, "id")
-        self.projects = self._load_json("projects.json", Project, "id")
-        self.researchers = self._load_json("researchers.json", Researcher, "username")
-        # Need to change
+    _instance: "DataStore | None" = None
+
+    def __new__(cls) -> "DataStore":
+        if cls._instance is None:
+            instance = super().__new__(cls)
+            instance._load()
+            cls._instance = instance
+        return cls._instance
+
+    def _load(self) -> None:
+        self.datasets: dict[str, Dataset] = {
+            entry["id"]: Dataset(**entry)
+            for entry in json.loads((MOCK_DATA_DIR / "datasets.json").read_text())
+        }
+        self.projects: dict[str, Project] = {
+            entry["id"]: Project(**entry)
+            for entry in json.loads((MOCK_DATA_DIR / "projects.json").read_text())
+        }
+        self.researchers: dict[str, Researcher] = {
+            entry["username"]: Researcher(**entry)
+            for entry in json.loads((MOCK_DATA_DIR / "researchers.json").read_text())
+        }
         self.query_results: dict[str, dict] = json.loads(
             (MOCK_DATA_DIR / "sample_query_results.json").read_text()
         )
-
-
-    def _read_json(self, filename: str):
-        with (MOCK_DATA_DIR /filename).open("r", encoding="utf-8") as f:
-            return json.load(f)
-
-    def _load_json(self, filename: str, model, key: str):
-        data = self._read_json(filename)
-        return{
-            item[key] : model(**item) for item in data
-        }
-
 
 datastore = DataStore()

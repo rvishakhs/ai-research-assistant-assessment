@@ -53,7 +53,7 @@ class AgentRunner:
 
 
 
-    async def run(self, query: str, researcher_id: str | None = None) -> dict:
+    async def run_query(self, query: str, researcher_id: str | None = None) -> dict:
         trace_id = str(uuid.uuid4())
         started_at = time.monotonic()
 
@@ -101,7 +101,7 @@ class AgentRunner:
             "sources": sources,
             "trace_id": trace_id,
             "tools_invoked": _avoid_duplicates_in_tool_invoked(tools_invoked),
-            "execution_time_ms": round(elapsed_ms, 2),
+            "execution_time": round(elapsed_ms, 2),
         }
 
 def _avoid_duplicates_in_tool_invoked(items: list[str]) -> list[str]:
