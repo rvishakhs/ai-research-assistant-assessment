@@ -32,6 +32,11 @@ class DataStore:
         self.datasets = self._load_json("datasets.json", Dataset, "id")
         self.projects = self._load_json("projects.json", Project, "id")
         self.researchers = self._load_json("researchers.json", Researcher, "username")
+        # Need to change
+        self.query_results: dict[str, dict] = json.loads(
+            (MOCK_DATA_DIR / "sample_query_results.json").read_text()
+        )
+
 
     def _read_json(self, filename: str):
         with (MOCK_DATA_DIR /filename).open("r", encoding="utf-8") as f:
@@ -42,5 +47,6 @@ class DataStore:
         return{
             item[key] : model(**item) for item in data
         }
+
 
 datastore = DataStore()
