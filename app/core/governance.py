@@ -1,3 +1,4 @@
+from typing import Protocol
 from dataclasses import dataclass
 
 NHS_SUPPRESSION_NOTICE = (
@@ -15,8 +16,8 @@ class GovernanceResult:
     message: str | None
 
 
-class GovernanceEngine:
-    def apply(self, query_result: dict) -> GovernanceResult:
+class MinimumCellCountPolicy:
+    def apply(self, query_result: dict) -> GovernanceResult | None:
         rows = query_result.get("rows", [])
         if len(rows) < MINIMUM_CELL_COUNT:
             return GovernanceResult(
@@ -24,4 +25,25 @@ class GovernanceEngine:
                 data=None,
                 message=NHS_SUPPRESSION_NOTICE,
             )
-        return GovernanceResult(suppressed=False, data=query_result, message=None)
+        return None
+
+
+class GovernancePolicy(Protocol):
+    def apply(self, query_result: dict) -> GovernanceResult | None: ...
+
+
+class GovernanceEngine:
+    def __init__(self, policies: list[GovernancePolicy] | None = None):
+        self.policies = policies or [MinimumCellCountPolicy()]
+
+    def apply(self, query_result: dict) -> GovernanceResult:
+        for policy in self.policies:
+            result = policy.apply(query_result)
+            if result is not None:
+                return result
+
+        return GovernanceResult(
+            suppressed=False,
+            data=query_result,
+            message=None,
+        )
