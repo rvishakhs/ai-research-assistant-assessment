@@ -6,7 +6,7 @@ from pydantic import BaseModel, Field
 
 class AuditRecord(BaseModel):
     trace_id: str = Field(default_factory=lambda: str(uuid.uuid4()))
-    query: str
+    question: str
     researcher_id: str | None = None
     tools_invoked: list[str] = Field(default_factory=list)
     execution_time_ms: float = 0.0

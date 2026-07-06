@@ -5,7 +5,7 @@ class Settings(BaseSettings):
 
     '''LLM Provider'''
     openai_api_key: str
-    openai_model: str = "gpt-4o"
+    openai_model: str = "gpt-5"
 
 
 settings = Settings()

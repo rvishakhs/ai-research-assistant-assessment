@@ -3,11 +3,10 @@ import re
 
 from langchain_core.messages import ToolMessage
 
-from app.agent.utils.sources import extract_sources
 from app.agent.utils.tool_results import (
     iter_tool_result_texts,
     items_for_tool,
-    tool_call_args_by_id,
+    tool_call_args_by_id, extract_sources,
 )
 from app.core.data_loader import DataStore
 

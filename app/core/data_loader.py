@@ -1,6 +1,6 @@
 import json
 from pathlib import Path
-from models import Dataset, Project, Researcher
+from app.core.models import Dataset, Project, Researcher
 
 MOCK_DATA_DIR = Path(__file__).parent.parent.parent / "mock-data"
 
