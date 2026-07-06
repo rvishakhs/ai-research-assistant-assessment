@@ -9,6 +9,7 @@ from langchain_core.messages import HumanMessage, SystemMessage, ToolMessage
 from langchain_mcp_adapters.client import MultiServerMCPClient
 from langchain_openai import ChatOpenAI
 
+from app.agent.prompts import build_system_prompt
 from app.agent.graph import SYSTEM_PROMPT, AgentState, build_graph
 from app.core.audit import AuditRecord
 from app.core.config import settings
@@ -21,6 +22,8 @@ class AgentRunner:
     def __init__(self):
         self._graph = None
         self._client: MultiServerMCPClient | None = None
+        self._system_prompt: str | None = None
+
     async def start(self) -> None:
         self._client = MultiServerMCPClient(
             {
@@ -32,6 +35,7 @@ class AgentRunner:
             }
         )
         tools = await self._client.get_tools()
+        self._system_prompt = build_system_prompt(tools)
         llm = self._build_llm()
         self._graph = build_graph(llm.bind_tools(tools), tools)
 
@@ -57,11 +61,24 @@ class AgentRunner:
         trace_id = str(uuid.uuid4())
         started_at = time.monotonic()
 
+        messages = [SystemMessage(content=self._system_prompt or "")]
+
+        if researcher_id:
+            messages.append(
+                SystemMessage(
+                    content=(
+                        f"The authenticated researcher making this request is "
+                        f"'{researcher_id}'. Pass researcher_id='{researcher_id}' to "
+                        "any tool call that accepts a researcher_id parameter "
+                        "(list_projects, run_query), even if the question does not "
+                        "name the researcher explicitly."
+                    )
+                )
+            )
+        messages.append(HumanMessage(content=question))
+
         initial_state: AgentState = {
-            "messages": [
-                SystemMessage(content=SYSTEM_PROMPT),
-                HumanMessage(content=query),
-            ],
+            "messages": messages,
             "trace_id": trace_id,
             "tools_invoked": [],
             "start_time": started_at,
