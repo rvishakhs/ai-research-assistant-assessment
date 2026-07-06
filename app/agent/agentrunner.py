@@ -1,27 +1,38 @@
-import json
 import logging
-import re
 import sys
 import time
 import uuid
 
-from langchain_core.messages import HumanMessage, SystemMessage, ToolMessage
+from langchain_core.messages import HumanMessage, SystemMessage
 from langchain_mcp_adapters.client import MultiServerMCPClient
 from langchain_openai import ChatOpenAI
 
+from app.agent.graph import AgentState, build_graph
 from app.agent.prompts import build_system_prompt
-from app.agent.graph import SYSTEM_PROMPT, AgentState, build_graph
 from app.core.audit import AuditRecord
 from app.core.config import settings
+
+
+from app.agent.utils.helper import (
+    dedupe_preserve_order as _dedupe_preserve_order,
+)
+from app.agent.utils.helper import ground_answer as _ground_answer
+from app.agent.utils.text import (
+    repair_answer_from_tool_results as _repair_answer_from_tool_results,
+)
+from app.agent.utils.tool_results import extract_sources as _extract_sources
+from app.agent.utils.text import to_plain_text as _to_plain_text
+from app.agent.utils.tracing import trace_config as _trace_config
 
 
 logger = logging.getLogger(__name__)
 
 class AgentRunner:
-    """Main runner class managing the agent and its dependencies"""
-    def __init__(self):
-        self._graph = None
+    """Manages the lifecycle of the MCP subprocess and the LangGraph agent."""
+
+    def __init__(self) -> None:
         self._client: MultiServerMCPClient | None = None
+        self._graph = None
         self._system_prompt: str | None = None
 
     async def start(self) -> None:
@@ -38,8 +49,6 @@ class AgentRunner:
         self._system_prompt = build_system_prompt(tools)
         llm = self._build_llm()
         self._graph = build_graph(llm.bind_tools(tools), tools)
-
-
         logger.info("AgentRunner started. %d MCP tools loaded.", len(tools))
 
     @staticmethod
@@ -55,9 +64,7 @@ class AgentRunner:
     async def stop(self) -> None:
         logger.info("AgentRunner stopped.")
 
-
-
-    async def run_query(self, query: str, researcher_id: str | None = None) -> dict:
+    async def run(self, question: str, researcher_id: str | None = None) -> dict:
         trace_id = str(uuid.uuid4())
         started_at = time.monotonic()
 
@@ -89,7 +96,10 @@ class AgentRunner:
         final_state: AgentState | None = None
 
         try:
-            final_state = await self._graph.ainvoke(initial_state)
+            final_state = await self._graph.ainvoke(
+                initial_state,
+                config=_trace_config(trace_id, researcher_id),
+            )
         except Exception as exc:
             error = str(exc)
             logger.exception("Agent graph raised an exception for trace %s", trace_id)
@@ -99,7 +109,7 @@ class AgentRunner:
 
         audit = AuditRecord(
             trace_id=trace_id,
-            query=query,
+            question=question,
             researcher_id=researcher_id,
             tools_invoked=tools_invoked,
             execution_time_ms=round(elapsed_ms, 2),
@@ -111,92 +121,16 @@ class AgentRunner:
             raise RuntimeError(error)
 
         answer = _to_plain_text(final_state["messages"][-1].content)
-        sources = _extract_sources(final_state["messages"])
+        answer = _ground_answer(final_state["messages"], answer, trace_id)
+        answer = _repair_answer_from_tool_results(
+            question, final_state["messages"], answer, researcher_id
+        )
+        sources = _extract_sources(final_state["messages"], answer)
 
         return {
             "answer": answer,
             "sources": sources,
             "trace_id": trace_id,
-            "tools_invoked": _avoid_duplicates_in_tool_invoked(tools_invoked),
-            "execution_time": round(elapsed_ms, 2),
+            "tools_invoked": _dedupe_preserve_order(tools_invoked),
+            "execution_time_ms": round(elapsed_ms, 2),
         }
-
-def _avoid_duplicates_in_tool_invoked(items: list[str]) -> list[str]:
-    """This function is used to remove duplicate entries for the tool invoked list"""
-    seen: set[str] = set()
-    result: list[str] = []
-
-    for item in items:
-        if item not in seen:
-            seen.add(item)
-            result.append(item)
-
-    return result
-
-_MARKDOWN_PATTERNS = [
-    (re.compile(r"```.*?```", re.DOTALL), " "),
-    (re.compile(r"`([^`]*)`"), r"\1"),
-    (re.compile(r"\*\*([^*]+)\*\*"), r"\1"),
-    (re.compile(r"__([^_]+)__"), r"\1"),
-    (re.compile(r"(?<!\w)[*_]([^*_]+)[*_](?!\w)"), r"\1"),
-    (re.compile(r"^\s{0,3}#{1,6}\s*", re.MULTILINE), ""),
-    (re.compile(r"^\s*[-*+]\s+", re.MULTILINE), ""),
-]
-
-def _to_plain_text(content) -> str:
-    """Collapse LLM output (markdown, multi-block content) into a single plain-text line."""
-    if isinstance(content, list):
-        text = " ".join(
-            block.get("text", "")
-            for block in content
-            if isinstance(block, dict) and block.get("type") == "text"
-        )
-    else:
-        text = str(content)
-
-    for pattern, replacement in _MARKDOWN_PATTERNS:
-        text = pattern.sub(replacement, text)
-
-    return re.sub(r"\s+", " ", text).strip()
-
-def _iter_tool_result_texts(msg: ToolMessage):
-    """Yield each text block from a ToolMessage, handling both str and list-of-dict content shapes."""
-    content = msg.content
-    if isinstance(content, str):
-        yield content
-    elif isinstance(content, list):
-        for block in content:
-            if isinstance(block, dict) and block.get("type") == "text" and "text" in block:
-                yield block["text"]
-            elif isinstance(block, str):
-                yield block
-
-
-def _extract_sources(messages) -> list[str]:
-    """Extract dataset/project IDs from tool call results."""
-    sources: list[str] = []
-    seen: set[str] = set()
-
-    def add(candidate_id: str | None) -> None:
-        if candidate_id and candidate_id.upper() not in seen:
-            seen.add(candidate_id.upper())
-            sources.append(candidate_id.upper())
-
-    for msg in messages:
-        if not isinstance(msg, ToolMessage):
-            continue
-        for text in _iter_tool_result_texts(msg):
-            try:
-                payload = json.loads(text)
-            except (TypeError, ValueError):
-                continue
-            items = payload if isinstance(payload, list) else [payload]
-            for item in items:
-                if not isinstance(item, dict):
-                    continue
-                add(item.get("id"))
-                add(item.get("dataset_id"))
-                add(item.get("project_id"))
-
-    return sources
-

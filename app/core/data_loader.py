@@ -1,29 +1,6 @@
-from pathlib import Path
-from pydantic import BaseModel
 import json
-
-class Dataset(BaseModel):
-    id : str
-    name : str
-    description : str
-    records : int
-    restricted : bool
-    fields: list[str]
-
-class Project(BaseModel):
-    id : str
-    title : str
-    status : str
-    principal_investigator : str
-    organisation : str
-    datasets : list[str]
-
-class Researcher(BaseModel):
-    username : str
-    display_name :  str
-    role: str
-    projects: list[str]
-
+from pathlib import Path
+from models import Dataset, Project, Researcher
 
 MOCK_DATA_DIR = Path(__file__).parent.parent.parent / "mock-data"
 
