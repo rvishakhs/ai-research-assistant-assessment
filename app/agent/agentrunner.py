@@ -10,13 +10,6 @@ from app.agent.graph import AgentState, build_graph
 from app.agent.prompts import build_system_prompt
 from app.core.audit import AuditRecord
 from app.core.config import settings
-from app.agent.utils.helper import (
-    dedupe_preserve_order as _dedupe_preserve_order,
-)
-from app.agent.utils.helper import ground_answer as _ground_answer
-from app.agent.utils.text import (
-    repair_answer_from_tool_results as _repair_answer_from_tool_results,
-)
 from app.agent.utils.tool_results import extract_sources as _extract_sources
 from app.agent.utils.text import to_plain_text as _to_plain_text
 
@@ -116,10 +109,6 @@ class AgentRunner:
             raise RuntimeError(error)
 
         answer = _to_plain_text(final_state["messages"][-1].content)
-        answer = _ground_answer(final_state["messages"], answer, trace_id)
-        answer = _repair_answer_from_tool_results(
-            question, final_state["messages"], answer, researcher_id
-        )
         sources = _extract_sources(final_state["messages"], answer)
 
         return {
