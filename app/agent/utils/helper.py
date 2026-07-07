@@ -3,25 +3,16 @@ import re
 
 from langchain_core.messages import ToolMessage
 
+from app.agent.utils.text import to_plain_text, repair_answer_from_tool_results
 from app.agent.utils.tool_results import (
     iter_tool_result_items,
     iter_tool_result_texts,
-    tool_call_args_by_id,
+    tool_call_args_by_id, extract_sources,
 )
 
 logger = logging.getLogger(__name__)
 
 _DATASET_FILTER_KEYS = ("keyword", "min_records", "max_records")
-
-def dedupe_preserve_order(items: list[str]) -> list[str]:
-    seen: set[str] = set()
-    result: list[str] = []
-    for item in items:
-        if item not in seen:
-            seen.add(item)
-            result.append(item)
-    return result
-
 
 
 def _meaningful_dataset_filters(args: dict) -> dict:
@@ -162,3 +153,15 @@ def ground_answer(messages, answer: str, trace_id: str) -> str:
                 answer += "."
 
     return answer
+
+def finalize_answer(
+    question: str,
+    messages,
+    trace_id: str,
+    researcher_id: str | None = None,
+) -> tuple[str, list[str]]:
+    """Post-process the final LLM message and return answer text plus sources."""
+    answer = to_plain_text(messages[-1].content)
+    answer = ground_answer(messages, answer, trace_id)
+    answer = repair_answer_from_tool_results(question, messages, answer, researcher_id)
+    return answer, extract_sources(messages, answer)

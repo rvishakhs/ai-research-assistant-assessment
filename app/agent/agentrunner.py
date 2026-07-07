@@ -6,13 +6,10 @@ import uuid
 from langchain_core.messages import HumanMessage, SystemMessage
 from langchain_mcp_adapters.client import MultiServerMCPClient
 from langchain_openai import ChatOpenAI
-
 from app.agent.graph import AgentState, build_graph
 from app.agent.prompts import build_system_prompt
 from app.core.audit import AuditRecord
 from app.core.config import settings
-
-
 from app.agent.utils.helper import (
     dedupe_preserve_order as _dedupe_preserve_order,
 )
@@ -22,7 +19,6 @@ from app.agent.utils.text import (
 )
 from app.agent.utils.tool_results import extract_sources as _extract_sources
 from app.agent.utils.text import to_plain_text as _to_plain_text
-from app.agent.utils.tracing import trace_config as _trace_config
 
 
 logger = logging.getLogger(__name__)
@@ -97,8 +93,7 @@ class AgentRunner:
 
         try:
             final_state = await self._graph.ainvoke(
-                initial_state,
-                config=_trace_config(trace_id, researcher_id),
+                initial_state
             )
         except Exception as exc:
             error = str(exc)
