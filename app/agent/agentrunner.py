@@ -11,6 +11,7 @@ from app.agent.prompts import build_system_prompt
 from app.core.audit import AuditRecord
 from app.core.config import settings
 from app.agent.utils.tool_results import extract_sources as _extract_sources
+from app.agent.utils.tool_results import dedupe_preserve_order as _dedupe_preserve_order
 from app.agent.utils.text import to_plain_text as _to_plain_text
 
 

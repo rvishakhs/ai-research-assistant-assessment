@@ -1,0 +1,274 @@
+[
+  {
+    "question": "List all active research projects.",
+    "passed": true,
+    "answer": "Active projects: Early Detection of Type 2 Diabetes; Heart Failure Risk Prediction; COPD Exacerbation Analytics; Stroke Recovery Trajectories; Emergency Demand Forecasting; Mental Health Service Utilisation; Maternity Outcomes Programme; Sepsis Early Warning; Chronic Kidney Disease Progression; Elective Waiting List Management; Vaccination Uptake Monitoring; Health Inequalities Mapping; Asthma Control Research; Medication Safety Incident Analysis; ICU Outcomes Benchmarking",
+    "sources": [
+      "PRJ001",
+      "PRJ002",
+      "PRJ003",
+      "PRJ005",
+      "PRJ006",
+      "PRJ007",
+      "PRJ009",
+      "PRJ010",
+      "PRJ011",
+      "PRJ013",
+      "PRJ014",
+      "PRJ015",
+      "PRJ017",
+      "PRJ018",
+      "PRJ019"
+    ],
+    "reasons": []
+  },
+  {
+    "question": "Show all restricted datasets.",
+    "passed": true,
+    "answer": "Restricted datasets: Stroke Recovery Registry; Sepsis Registry; Health Inequalities Dataset; Remote Monitoring Dataset.",
+    "sources": [
+      "DS005",
+      "DS010",
+      "DS015",
+      "DS020"
+    ],
+    "reasons": []
+  },
+  {
+    "question": "Which datasets relate to diabetes?",
+    "passed": true,
+    "answer": "Datasets related to \"diabetes\": Primary Care Diabetes Cohort.",
+    "sources": [
+      "DS001"
+    ],
+    "reasons": []
+  },
+  {
+    "question": "Which projects can alice access?",
+    "passed": true,
+    "answer": "Projects for researcher alice: Mental Health Service Utilisation; Medication Safety Incident Analysis.",
+    "sources": [
+      "PRJ007",
+      "PRJ018"
+    ],
+    "reasons": []
+  },
+  {
+    "question": "Describe DS005.",
+    "passed": true,
+    "answer": "Stroke Recovery Registry: synthetic stroke rehabilitation and recovery dataset; 19,549 records; restricted; fields include age, stroke_type, nihss_score, and discharge_destination.",
+    "sources": [
+      "DS005"
+    ],
+    "reasons": []
+  },
+  {
+    "question": "Run an analysis on DS001.",
+    "passed": true,
+    "answer": "Analysis on DS001 returned 18 records with fields patient_age, sex, hba1c, bmi, and ethnicity, and sample rows have been provided.",
+    "sources": [
+      "DS001"
+    ],
+    "reasons": []
+  },
+  {
+    "question": "Run an analysis on DS005.",
+    "passed": true,
+    "answer": "Query failed: the dataset is restricted and requires an authorised researcher_id.",
+    "sources": [
+      "DS005"
+    ],
+    "reasons": []
+  },
+  {
+    "question": "Find datasets related to respiratory disease.",
+    "passed": true,
+    "answer": "Datasets related to respiratory disease: COPD Clinic Dataset.",
+    "sources": [
+      "DS003"
+    ],
+    "reasons": []
+  },
+  {
+    "question": "Which completed projects are available?",
+    "passed": true,
+    "answer": "Completed projects: Cancer Outcomes Study; Frailty and Falls Prevention; Population Health Analytics; Long COVID Symptom Tracking; Remote Patient Monitoring Evaluation.",
+    "sources": [
+      "PRJ004",
+      "PRJ008",
+      "PRJ012",
+      "PRJ016",
+      "PRJ020"
+    ],
+    "reasons": []
+  },
+  {
+    "question": "Show metadata for DS010.",
+    "passed": true,
+    "answer": "Sepsis Registry: synthetic sepsis presentation and treatment dataset; 39,241 records; restricted; fields include age, lactate, sofa_score, time_to_antibiotics_mins.",
+    "sources": [
+      "DS010"
+    ],
+    "reasons": []
+  },
+  {
+    "question": "List oncology datasets.",
+    "passed": true,
+    "answer": "Oncology datasets: Cancer Registry.",
+    "sources": [
+      "DS004"
+    ],
+    "reasons": []
+  },
+  {
+    "question": "Which datasets have more than 20000 records?",
+    "passed": true,
+    "answer": "Datasets with more than 20000 records: Primary Care Diabetes Cohort, Cancer Registry, Maternity Dataset, Population Health Dataset, Waiting Lists Dataset, ICU Outcomes Registry.",
+    "sources": [
+      "DS001",
+      "DS004",
+      "DS009",
+      "DS012",
+      "DS013",
+      "DS019"
+    ],
+    "reasons": []
+  },
+  {
+    "question": "Search for heart failure datasets.",
+    "passed": true,
+    "answer": "Datasets matching keyword \"heart failure\": Heart Failure Registry.",
+    "sources": [
+      "DS002"
+    ],
+    "reasons": []
+  },
+  {
+    "question": "What fields exist in DS003?",
+    "passed": true,
+    "answer": "Fields in COPD Clinic Dataset: age, fev1, smoking_status, exacerbations_per_year.",
+    "sources": [
+      "DS003"
+    ],
+    "reasons": []
+  },
+  {
+    "question": "Who owns PRJ004?",
+    "passed": true,
+    "answer": "Dr David Green",
+    "sources": [
+      "PRJ004"
+    ],
+    "reasons": []
+  },
+  {
+    "question": "Run a query on DS002.",
+    "passed": true,
+    "answer": "Results were suppressed under NHS information governance policy because the result set contained fewer than 5 records.",
+    "sources": [
+      "DS002"
+    ],
+    "reasons": []
+  },
+  {
+    "question": "List public health projects.",
+    "passed": true,
+    "answer": "Public Health projects: Population Health Analytics; Vaccination Uptake Monitoring.",
+    "sources": [
+      "PRJ012",
+      "PRJ014"
+    ],
+    "reasons": []
+  },
+  {
+    "question": "Which datasets are restricted?",
+    "passed": true,
+    "answer": "Restricted datasets: Stroke Recovery Registry; Sepsis Registry; Health Inequalities Dataset; Remote Monitoring Dataset.",
+    "sources": [
+      "DS005",
+      "DS010",
+      "DS015",
+      "DS020"
+    ],
+    "reasons": []
+  },
+  {
+    "question": "Summarise project PRJ012.",
+    "passed": true,
+    "answer": "Completed project \"Population Health Analytics\" (Public Health) led by Dr Robert Hughes used dataset \"DS012\".",
+    "sources": [
+      "PRJ012"
+    ],
+    "reasons": []
+  },
+  {
+    "question": "Show cardiology datasets.",
+    "passed": true,
+    "answer": "Cardiology datasets: Heart Failure Registry.",
+    "sources": [
+      "DS002"
+    ],
+    "reasons": []
+  },
+  {
+    "question": "Find digital health research.",
+    "passed": true,
+    "answer": "Digital Health projects: Remote Patient Monitoring Evaluation (Completed).",
+    "sources": [
+      "PRJ020"
+    ],
+    "reasons": []
+  },
+  {
+    "question": "Which researcher is an administrator?",
+    "passed": true,
+    "answer": "Administrator: Platform Admin (username: admin).",
+    "sources": [
+      "admin"
+    ],
+    "reasons": []
+  },
+  {
+    "question": "Show projects related to ICU.",
+    "passed": true,
+    "answer": "Projects related to ICU: ICU Outcomes Benchmarking (Active, Critical Care).",
+    "sources": [
+      "PRJ019"
+    ],
+    "reasons": []
+  },
+  {
+    "question": "Describe asthma research.",
+    "passed": true,
+    "answer": "Asthma research: Active project \"Asthma Control Research\" in Respiratory led by Dr Sophie Clarke using the \"Asthma Clinic Dataset\" (synthetic, 17,828 records) with fields age, fev1_percent_predicted, exacerbations, and inhaler_adherence.",
+    "sources": [
+      "PRJ017",
+      "DS017"
+    ],
+    "reasons": []
+  },
+  {
+    "question": "List all datasets available.",
+    "passed": true,
+    "answer": "Datasets: Primary Care Diabetes Cohort; Heart Failure Registry; COPD Clinic Dataset; Cancer Registry; Emergency Demand Dataset; Mental Health Referrals Dataset; Frailty Assessment Dataset; Maternity Dataset; Kidney Disease Registry; Population Health Dataset; Waiting Lists Dataset; Vaccination Dataset; Long COVID Dataset; Asthma Clinic Dataset; Medication Safety Dataset; ICU Outcomes Registry.",
+    "sources": [
+      "DS001",
+      "DS002",
+      "DS003",
+      "DS004",
+      "DS006",
+      "DS007",
+      "DS008",
+      "DS009",
+      "DS011",
+      "DS012",
+      "DS013",
+      "DS014",
+      "DS016",
+      "DS017",
+      "DS018",
+      "DS019"
+    ],
+    "reasons": []
+  }
+]

@@ -8,6 +8,16 @@ from langchain_core.messages import AIMessage, ToolMessage
 # block per item, so the tool name is the reliable browse/direct-lookup signal.
 _BROWSE_TOOLS = {"list_projects", "search_datasets", "list_researchers"}
 
+def dedupe_preserve_order(items: list[str]) -> list[str]:
+    seen: set[str] = set()
+    result: list[str] = []
+    for item in items:
+        if item not in seen:
+            seen.add(item)
+            result.append(item)
+    return result
+
+
 def iter_tool_result_texts(msg: ToolMessage):
     """Yield text blocks from a ToolMessage across supported content shapes."""
     content = msg.content
