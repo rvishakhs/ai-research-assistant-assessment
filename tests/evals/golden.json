@@ -1,0 +1,127 @@
+[
+  {
+    "question": "List all active research projects.",
+    "expected_sources": ["PRJ001", "PRJ002", "PRJ003", "PRJ005", "PRJ006", "PRJ007", "PRJ009", "PRJ010", "PRJ011", "PRJ013", "PRJ014", "PRJ015", "PRJ017", "PRJ018", "PRJ019"],
+    "must_contain": ["active"]
+  },
+  {
+    "question": "Show all restricted datasets.",
+    "expected_sources": ["DS005", "DS010", "DS015", "DS020"],
+    "must_contain": ["restricted"]
+  },
+  {
+    "question": "Which datasets relate to diabetes?",
+    "expected_sources": ["DS001"],
+    "must_contain": ["diabetes"]
+  },
+  {
+    "question": "Which projects can alice access?",
+    "expected_sources": ["PRJ007", "PRJ018"],
+    "must_contain": ["alice"]
+  },
+  {
+    "question": "Describe DS005.",
+    "expected_sources": ["DS005"],
+    "must_contain": ["stroke"]
+  },
+  {
+    "question": "Run an analysis on DS001.",
+    "expected_sources": ["DS001"],
+    "must_contain": []
+  },
+  {
+    "question": "Run an analysis on DS005.",
+    "expected_sources": ["DS005"],
+    "must_contain": ["restricted", "authorised"]
+  },
+  {
+    "question": "Find datasets related to respiratory disease.",
+    "expected_sources": ["DS003"],
+    "must_contain": ["respiratory"]
+  },
+  {
+    "question": "Which completed projects are available?",
+    "expected_sources": ["PRJ004", "PRJ008", "PRJ012", "PRJ016", "PRJ020"],
+    "must_contain": ["completed"]
+  },
+  {
+    "question": "Show metadata for DS010.",
+    "expected_sources": ["DS010"],
+    "must_contain": ["sepsis"]
+  },
+  {
+    "question": "List oncology datasets.",
+    "expected_sources": ["DS004"],
+    "must_contain": ["oncology"]
+  },
+  {
+    "question": "Which datasets have more than 20000 records?",
+    "expected_sources": ["DS001", "DS004", "DS009", "DS012", "DS013", "DS019"],
+    "must_contain": []
+  },
+  {
+    "question": "Search for heart failure datasets.",
+    "expected_sources": ["DS002"],
+    "must_contain": ["heart failure"]
+  },
+  {
+    "question": "What fields exist in DS003?",
+    "expected_sources": ["DS003"],
+    "must_contain": ["fev1"]
+  },
+  {
+    "question": "Who owns PRJ004?",
+    "expected_sources": ["PRJ004"],
+    "must_contain": ["david green"]
+  },
+  {
+    "question": "Run a query on DS002.",
+    "expected_sources": ["DS002"],
+    "must_contain": ["suppress"]
+  },
+  {
+    "question": "List public health projects.",
+    "expected_sources": ["PRJ012", "PRJ014"],
+    "must_contain": ["public health"]
+  },
+  {
+    "question": "Which datasets are restricted?",
+    "expected_sources": ["DS005", "DS010", "DS015", "DS020"],
+    "must_contain": ["restricted"]
+  },
+  {
+    "question": "Summarise project PRJ012.",
+    "expected_sources": ["PRJ012"],
+    "must_contain": ["population health"]
+  },
+  {
+    "question": "Show cardiology datasets.",
+    "expected_sources": ["DS002"],
+    "must_contain": ["heart failure"]
+  },
+  {
+    "question": "Find digital health research.",
+    "expected_sources": ["PRJ020"],
+    "must_contain": ["digital health"]
+  },
+  {
+    "question": "Which researcher is an administrator?",
+    "expected_sources": ["admin"],
+    "must_contain": ["admin"]
+  },
+  {
+    "question": "Show projects related to ICU.",
+    "expected_sources": ["PRJ019"],
+    "must_contain": ["icu"]
+  },
+  {
+    "question": "Describe asthma research.",
+    "expected_sources": ["PRJ017"],
+    "must_contain": ["asthma"]
+  },
+  {
+    "question": "List all datasets available.",
+    "expected_sources": ["DS001", "DS002", "DS003", "DS004", "DS006", "DS007", "DS008", "DS009", "DS011", "DS012", "DS013", "DS014", "DS016", "DS017", "DS018", "DS019"],
+    "must_contain": []
+  }
+]
