@@ -1,183 +1,221 @@
-# Take Home Technical Assessment - AI Research Assistant using MCP
+# **NHS AI Research Assistant** 
 
-## Overview
+## Contents
+1. Project overview
+2. Architecture
+3. Technologies used
+4. Folder structure
+5. Assumptions
+6. Setup instructions
+7. Known limitations
+8. Future improvements
 
-You are building a lightweight AI Research Assistant for a regional NHS Research and Analytics Platform.
+### Project overview
+An AI-Powered research assistant for the NHS research and Analytics Platform. Researcher can discover projects, explore datasets, and run approved analytical queries through a conversial natural language interface. Key capabilities include project/dataset discovery, dataset metadata retrieval, governed query execution, researcher lookup, audit logging.
 
-Researchers use the assistant to discover approved research projects, explore available datasets, and perform approved analytical queries against synthetic research data. The platform follows a service-oriented architecture where backend capabilities are exposed through the Model Context Protocol (MCP).
+**Key Features**
+- **Single-agent, ReAct-style architecture**. I chose a single LangGraph agent instead of a multi-agent setup because the application is mainly coordinating tool calls rather than solving complex reasoning tasks. The agent decides which tool to use, observes the result, and continues until it has enough information to answer the user. This keeps the architecture simpler, reduces latency, and makes the workflow easier to understand and debug.
+- **MCP as the data access layer.** The agent never talks to databases or datasets directly. Instead, it interacts with the MCP server, which exposes the available tools. MCP automatically injects the tool definitions into the agent's system prompt, so the agent always knows what tools it can use. If new tools are added to the MCP server, they become available to the agent without changing its core logic. Keeping MCP as a separate service also makes it easier to scale, secure, and reuse with other applications in the future.
+- **Server-side governance.** Data governance is enforced inside the MCP tool layer rather than relying on prompts or the LLM. Every request goes through the governance engine before data is returned, ensuring that suppression rules and access policies cannot be bypassed through prompt manipulation. The governance engine is policy-based, making it easy to add new rules without modifying the agent or API.
+- **Role-based access control.** Access is determined by the researcher's assigned projects. Researchers with projects = ["*"] have full access, while others can only query datasets linked to their projects. If a request does not include a valid researcher_id, access to restricted datasets is denied. This ensures that sensitive data is only available to authorised users.
 
-Your solution should demonstrate how an AI agent can safely interact with MCP tools to answer researchers' questions while applying appropriate governance controls.
+### Architecture
 
-## Objective
+```
+Client
+  │  POST /query
+  ▼
+FastAPI (app/main.py, app/api/routes.py)
+  ▼
+AgentRunner (app/agent/agentrunner.py)
+  │  builds a LangGraph ReAct agent bound to MCP tools
+  ▼
+LangGraph agent/tools loop (app/agent/graph.py)
+  │  OpenAI LLM decides which tools to call, in what order
+  ▼
+MCP client (langchain-mcp-adapters, MultiServerMCPClient)
+  │  stdio subprocess
+  ▼
+MCP server (app/mcp_server/server.py, FastMCP)
+  │  list_projects, get_project, search_datasets, get_dataset_metadata,
+  │  run_query, list_researchers, get_researcher
+  ▼
+DataStore (app/core/data_loader.py)          — in-memory singleton over the research data
+  ▼
+GovernanceEngine (app/core/governance.py)    — pluggable policies, e.g. MinimumCellCountPolicy
+  ▼
+AuditRecord (app/core/audit.py)              — trace_id, tools_invoked, execution_time_ms, errors
+  ▼
+Evaluation (pytest and golden-datset)        — 45+ test cases and 25 evaluation questions
 
-The goal of this exercise is to assess practical AI engineering, software engineering, system design, API development, and reasoning.
+```
+### Technology Choices
 
-We are more interested in your engineering decisions, architecture, code quality, documentation, and problem-solving than in implementing a production-ready system.
+| Technology          | Choice       | Reason                                                                                                                                                                                         |
+| ------------------- | ------------ | ---------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- |
+| **Agent Framework** | LangGraph    | Provides explicit state management with complete control over the agent workflow. Makes it easy to track metadata such as `tools_invoked`, `trace_id`, and other execution state across nodes. |
+| **Backend / API**   | FastAPI      | High-performance asynchronous web framework with native `async/await` support, automatic request validation using Pydantic, and a lightweight architecture.                                    |
+| **Language Model**  | OpenAI GPT-5 | Reliable, industry-standard language model for agentic workflows with strong tool-calling and reasoning capabilities.                                                                          |
+| **MCP Server**      | FastMCP      | Simplifies building MCP servers and automatically exposes tool definitions to the agent, making it easy to add new tools while keeping data access separated from the agent logic.             |
+| **Package Manager** | uv           | Fast, lightweight dependency manager with significantly quicker package installation and                                                                                                       |
 
-A clean, well-structured solution is preferred over excessive features.
 
-## Requirements
+### Folder Structure
 
-### 1. Build an MCP Server
+```
+.
+├── app/
+│   ├── main.py                  # FastAPI app + lifespan (starts/stops the AgentRunner)
+│   ├── api/
+│   │   └── routes.py            # GET /health, POST /query
+│   ├── schemas/
+│   │   └── api.py               # QueryRequest / QueryResponse models
+│   ├── core/
+│   │   ├── config.py            # environment-driven settings
+│   │   ├── data_loader.py       # DataStore: in-memory singleton over research data
+│   │   ├── models.py            # Dataset / Project / Researcher models
+│   │   ├── governance.py        # GovernanceEngine + governance policies
+│   │   └── audit.py             # AuditRecord model
+│   ├── mcp_server/
+│   │   ├── server.py            # MCP server exposing the research platform's tools
+│   │   └── utils/helper.py      # access-control and ID-resolution helpers
+│   └── agent/
+│       ├── agentrunner.py       # wires up the MCP client and the LangGraph agent per request
+│       ├── graph.py             # LangGraph agent/tools loop
+│       ├── prompts.py           # system prompt and tool-summary builder
+│       └── utils/               # answer formatting and source extraction helpers
+├── mock-data/                    # research data: projects, datasets, researchers, query results
+├── tests/
+│   ├── test_app.py               # API-level tests
+│   ├── test_runner.py            # governance/policy tests
+│   ├── test_tools.py             # MCP tool tests
+│   └── evals/                    # golden-question, end-to-end evaluation harness
+├── pyproject.toml
+├── uv.lock
+├── .env.example
+├── Dockercompose.yml
+└── DockerFile
 
-Design and implement your own MCP server.
-
-The MCP server should expose tools that enable an AI agent to interact with the research platform.
-
-At a minimum, the MCP server should support:
-- Discover available research projects
-- Retrieve project information
-- Search available datasets
-- Retrieve dataset metadata
-- Execute analytical queries against the supplied synthetic data
-
-You are free to introduce additional tools if you feel they improve the design.
-
-### 2. Build an AI Research Assistant
-
-Implement an AI agent capable of answering natural language questions from researchers.
-
-The assistant should interact with your MCP server rather than directly accessing the underlying data.
-
-The assistant should determine:
-- Which MCP tools to invoke
-- The order in which tools should be called
-- How the results should be combined into a final response
-
-You may use any LLM provider, agent framework, or orchestration approach.
-
-### 3. Expose an API
-
-Expose a REST API to interact with the assistant.
-
-Example endpoint: `POST /query`
-
-Example request:
-```json
-{"question": "Which datasets are available for diabetes research?"}
 ```
 
-Example response:
-```json
-{"answer": "...", "sources": ["DS001"], "trace_id": "a1b2c3d4"}
+### Assumptions
+- **Single-agent architecture:** A single Langgraph agent is sufficient for the described use cases. Multi-agent adds complexity with benefit at this scale
+- **In-memory data:** DataStore is a singleton service, loads all JSON files once at startup. This is appropriate for the mock data size. databases will be considered for production and when data scales
+- **Audit logging:** Currently audit logging is managed to trackdown the workflow, in production level application it need to be stored in a database for validation 
+- **Governance Applied at Tool level** In this Architecture governance applies directly at tool level to make it imposibble for LLM prompts to bypass. 
+
+### Setup instructions
+
+**Prerequisites**
+
+- Python 3.12+
+- [uv](https://docs.astral.sh/uv/)
+- An OpenAI API key
+
+**Setup**
+
+```bash
+# install dependencies
+uv sync
+
+# configure environment
+cp .env.example .env
+# edit .env and set OPENAI_API_KEY
+
+# start the API
+uv run uvicorn app.main:app --reload
 ```
 
-The API should delegate reasoning to the AI assistant.
+The API will be available at `http://localhost:8000`.
 
-### 4. Apply Governance Rules
 
-Implement at least one governance rule.
+**Running tests**
 
-Example: Suppress analytical results containing fewer than five records.
+```bash
+# unit tests (fast, deterministic — API, governance, MCP tools)
+uv run pytest
 
-Your design should allow additional governance policies to be added with minimal architectural changes.
-
-### 5. Observability
-
-Generate basic audit information for each request including:
-- Request identifier
-- MCP tools invoked
-- Execution time
-- Errors where applicable
-
-### 6. Containerise the Application
-
-Provide a Dockerfile and simple run instructions.
-
-Docker Compose and Kubernetes manifests are optional.
-
-### 7. Documentation
-
-Provide a README containing:
-- Architecture overview
-- Technology choices
-- Assumptions
-- Setup instructions
-- Known limitations
-- Future improvements
-
-## Mock Data
-
-Synthetic data is provided in [`mock-data/`](mock-data/):
-- `projects.json`
-- `datasets.json`
-- `researchers.json`
-- `sample_query_results.json`
-- `evaluation_questions.json`
-
-You may store and access the data using any approach you consider appropriate.
-
-## Example Scenarios
-
-The examples below are sample responses, not the exact expected output. They show the response structure (`answer`, `sources`, `trace_id`) and correct facts from the mock data. Your assistant's actual answer can look however you like; short, long, with tables, whatever fits your design.
-
-**Dataset Discovery**
-
-Request:
-```json
-{"question": "List all active research projects."}
-```
-Example Response:
-```json
-{"answer": "The platform currently contains 15 active research projects.", "sources": ["PRJ001", "PRJ002", "PRJ003", "PRJ005", "PRJ006", "PRJ007", "PRJ009", "PRJ010", "PRJ011", "PRJ013", "PRJ014", "PRJ015", "PRJ017", "PRJ018", "PRJ019"], "trace_id": "a1b2c3d4"}
+# end-to-end evaluation suite (exercises the real LLM against golden questions)
+uv run python -m tests.evals.run_eval --report tests/evals/eval-report.json
 ```
 
-**Dataset Search**
+#### Environment Variables
 
-Request:
-```json
-{"question": "Show datasets related to diabetes."}
-```
-Example Response:
-```json
-{"answer": "One dataset is available for diabetes research: Primary Care Diabetes Cohort.", "sources": ["DS001"], "trace_id": "a1b2c3d4"}
-```
+| Variable | Required | Default | Description |
+|---|---|---|---|
+| `OPENAI_API_KEY` | Yes | — | API key used to call the OpenAI model powering the agent. |
+| `OPENAI_MODEL` | No | `gpt-5` | OpenAI model used by the agent. |
 
-**Governance**
+> Note: LangSmith tracing sends request/response data to a hosted service. Do not enable it against
+> confidential data without appropriate approval and redaction.
 
-Request:
-```json
-{"question": "Run an analysis on the Stroke Recovery Registry dataset."}
-```
-Example Response:
-```json
-{"answer": "Results have been suppressed because the analytical result contains fewer than five records.", "sources": ["DS005"], "trace_id": "a1b2c3d4"}
-```
+#### Docker Instructions
 
-**Invalid Request**
+Build and run the application in a container:
 
-Request:
-```json
-{"question": "Show datasets from Project ABC123"}
-```
-Example Response:
-```json
-{"answer": "Project not found.", "sources": [], "trace_id": "a1b2c3d4"}
+```bash
+# build the image
+docker build -t nhs-research-assistant .
+
+# run the container
+docker run --env-file .env -p 8000:8000 nhs-research-assistant
 ```
 
-## Freedom of Implementation
+The API will be available at `http://localhost:8000`, exactly as in local development.
 
-You are free to choose:
-- Programming language
-- AI framework
-- LLM provider
-- Database
-- MCP implementation
-- Project structure
+#### API Endpoints
 
-Single-agent and multi-agent architectures are both acceptable. If you choose a particular architecture, please explain your reasoning.
+#### `GET /health`
 
-## Submission Instructions
+Health check for the service.
 
-1. Fork this repository into your own GitHub account.
-2. Implement your solution within your fork.
-3. Once completed, share the URL of your repository as your submission, containing:
-   - Source code
-   - README
-   - Dockerfile
-   - Requirements or dependency file
-   - Configuration files required to run the application
+**Response**
 
-## Notes
+```json
+{"status": "ok"}
+```
 
-You are free to make reasonable assumptions where requirements are ambiguous. Please document any assumptions clearly in the README. There is intentionally no single correct solution. We are interested in understanding your engineering approach, design decisions, and ability to justify architectural trade-offs.
+#### `POST /query`
+
+Submit a natural language question to the research assistant.
+
+**Request body**
+
+```json
+{
+  "question": "Which datasets are available for diabetes research?",
+  "researcher_id": "RS001"
+}
+```
+
+- `question` (string, required) — the researcher's natural language question.
+- `researcher_id` (string, optional) — identifies the requesting researcher, used to enforce
+  access control on restricted datasets. If omitted, access to restricted data is denied.
+
+**Response body**
+
+```json
+{
+  "answer": "One dataset is available for diabetes research: Primary Care Diabetes Cohort.",
+  "sources": ["DS001"],
+  "trace_id": "a1b2c3d4",
+  "tools_invoked": ["search_datasets"],
+  "execution_time_ms": 842.5
+}
+```
+
+### Known Limitations
+- **No Streaming output:** `Post/query` endpoint waits until the full agent response is ready. SSE Streaming is the better way to stream the tokens while model generating in the background.
+- **In-Process MCP Server:** The MCP server is not shared platform service yet. it currently runs as a sub-process of the FASTAPI server. I did stdio based MCP communication particularly for this project because for this use case it only connect with single agent under our current application. developing MCP server as a seperate service would introduce HTTP communication, exposed ports, service discovery and authentication for data privacy. For the current project uses case it didn't want that complexity.
+- **No-researcher-Auth:** No proper auth methods data validations used for researcher
+- **In-memory JSON Dict** Currently for Data storing used in-memory singleton service, that is based on the data-size available and to avoid extra complexity for no major benefits. Production level application requires a database for better processing and to protect data.
+- **Evaluation and Monitering** Used minimal evaluation functions to keep the application simple 
+
+
+### Future Improvements
+- **Persistent audit log** — write AuditRecord to PostgreSQL for compliance reporting
+- **Streaming responses** — Server-Sent Events for real-time token delivery
+- **Authentication middleware** — JWT validation for researcher_id
+- **Rate limiting** — per-researcher query throttling
+- **Additional governance rules** — field-level redaction, time-window access controls
+- **Evaluation harness** — automated scoring against evaluation_questions.json
