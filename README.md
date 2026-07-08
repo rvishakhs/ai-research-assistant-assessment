@@ -52,12 +52,12 @@ Evaluation (pytest and golden-datset)        — 45+ test cases and 25 evaluatio
 ### Technology Choices
 
 | Technology          | Choice       | Reason                                                                                                                                                                                         |
-| ------------------- | ------------ | ---------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- |
+| ------------------- | ------------ |------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------|
 | **Agent Framework** | LangGraph    | Provides explicit state management with complete control over the agent workflow. Makes it easy to track metadata such as `tools_invoked`, `trace_id`, and other execution state across nodes. |
 | **Backend / API**   | FastAPI      | High-performance asynchronous web framework with native `async/await` support, automatic request validation using Pydantic, and a lightweight architecture.                                    |
 | **Language Model**  | OpenAI GPT-5 | Reliable, industry-standard language model for agentic workflows with strong tool-calling and reasoning capabilities.                                                                          |
 | **MCP Server**      | FastMCP      | Simplifies building MCP servers and automatically exposes tool definitions to the agent, making it easy to add new tools while keeping data access separated from the agent logic.             |
-| **Package Manager** | uv           | Fast, lightweight dependency manager with significantly quicker package installation and                                                                                                       |
+| **Package Manager** | uv           | Fast, lightweight dependency manager with significantly quicker package installation.                                                                                                          |
 
 
 ### Folder Structure
@@ -144,21 +144,25 @@ uv run python -m tests.evals.run_eval --report tests/evals/eval-report.json
 | Variable | Required | Default | Description |
 |---|---|---|---|
 | `OPENAI_API_KEY` | Yes | — | API key used to call the OpenAI model powering the agent. |
-| `OPENAI_MODEL` | No | `gpt-5` | OpenAI model used by the agent. |
 
-> Note: LangSmith tracing sends request/response data to a hosted service. Do not enable it against
-> confidential data without appropriate approval and redaction.
 
 #### Docker Instructions
 
 Build and run the application in a container:
 
 ```bash
+# On running docker-compose
+docker compose up -d
+
+Or
+ 
 # build the image
 docker build -t nhs-research-assistant .
 
 # run the container
 docker run --env-file .env -p 8000:8000 nhs-research-assistant
+
+
 ```
 
 The API will be available at `http://localhost:8000`, exactly as in local development.
@@ -212,10 +216,12 @@ Submit a natural language question to the research assistant.
 - **Evaluation and Monitering** Used minimal evaluation functions to keep the application simple 
 
 
-### Future Improvements
-- **Persistent audit log** — write AuditRecord to PostgreSQL for compliance reporting
+### Future Improvements (Assuming Data grows and goes production level)
+- **Microservices architecture** — Introduce separate service for Databases, orchestration/FastAPI, MCP server  
 - **Streaming responses** — Server-Sent Events for real-time token delivery
-- **Authentication middleware** — JWT validation for researcher_id
-- **Rate limiting** — per-researcher query throttling
-- **Additional governance rules** — field-level redaction, time-window access controls
-- **Evaluation harness** — automated scoring against evaluation_questions.json
+- **Dedicated MCP Server** — For future use cases and sharing tools across different applications and different agents creating MCP server as a separate service is beneficial 
+- **Authentication middleware** — JWT validation and other access control implementation for better data privacy
+- **Additional governance rules** — As it handling confidential data need to add strict governance and safety guardrails for keeping the privacy and data security 
+- **Optimizations** — If the project structure and data size grows, need to implement optimization techniques like caching, rate limiting, pagination etc. for better latency and performance.  
+- **Evaluation & monitering** — Could improve the evaluation metrics with add LLM as a judge to find out model's subjective quality(faithfulness, helpfulness, reasoning) and as project grows need to add proper observability tools like langsmith or langfuse or both to monitor the flow and debugging.
+- **Persistent audit log** — write AuditRecord to database for compliance reporting
